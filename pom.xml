@@ -2,6 +2,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>io.airlift</groupId>
+        <artifactId>airbase</artifactId>
+        <version>40</version>
+    </parent>
+
     <groupId>com.facebook.presto</groupId>
     <artifactId>presto-jdbc-java6</artifactId>
     <packaging>jar</packaging>
@@ -42,9 +48,19 @@
         <dep.guava.version>18.0</dep.guava.version>
         <dep.testng.version>6.8.8</dep.testng.version>
         <dep.mockito.version>1.9.5</dep.mockito.version>
-        <dep.httpcore.version>4.4</dep.httpcore.version>
-        <dep.httpasyncclient.version>4.0.2</dep.httpasyncclient.version>
+        <dep.httpcore.version>4.4.1</dep.httpcore.version>
+        <dep.httpasyncclient.version>4.1</dep.httpasyncclient.version>
+        <dep.httpclient.version>4.5</dep.httpclient.version>
         <dep.joda.version>2.8</dep.joda.version>
+        <dep.presto.version>0.108-SNAPSHOT</dep.presto.version>
+        <dep.airlift.tpch.version>0.4</dep.airlift.tpch.version>
+        <dep.slice.version>0.14</dep.slice.version>
+
+        <air.check.skip-extended>true</air.check.skip-extended>
+        <air.check.skip-license>false</air.check.skip-license>
+        <air.check.skip-findbugs>true</air.check.skip-findbugs>
+        <air.check.fail-checkstyle>true</air.check.fail-checkstyle>
+        <air.check.skip-checkstyle>false</air.check.skip-checkstyle>
     </properties>
 
     <dependencies>
@@ -100,6 +116,24 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpasyncclient</artifactId>
             <version>${dep.httpasyncclient.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${dep.httpclient.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -118,6 +152,33 @@
         </dependency>
 
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.0.13</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-testing-server-launcher</artifactId>
+            <version>${dep.presto.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-tpch</artifactId>
+            <version>${dep.presto.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift.tpch</groupId>
+            <artifactId>tpch</artifactId>
+            <version>${dep.airlift.tpch.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
             <version>${dep.mockito.version}</version>
@@ -126,15 +187,63 @@
     </dependencies>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                </configuration>
-            </plugin>
-        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <!-- disable for now as it does not work for 1.6 JDK -->
+                    <groupId>com.mycila</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <phase>none</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <configuration>
+                                <ignoredUnusedDeclaredDependencies>
+                                    <ignoredUnusedDeclaredDependency>ch.qos.logback:logback-core:jar</ignoredUnusedDeclaredDependency>
+                                </ignoredUnusedDeclaredDependencies>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>2.15</version>
+                    <executions>
+                        <execution>
+                            <phase>validate</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${air.check.skip-checkstyle}</skip>
+                                <failOnViolation>${air.check.fail-checkstyle}</failOnViolation>
+                                <consoleOutput>true</consoleOutput>
+                                <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                                <configLocation>${air.main.basedir}/src/checkstyle/checks.xml</configLocation>
+                            </configuration>
+                        </execution>
+                    </executions>
+                    <dependencies>
+                        <!-- The version of checkstyle the plugin depends on doesn't support Java 8,
+                             so override it manually until a new version of the plugin is released.
+                             This is copied verbatim from the dependency declaration in the checkstyle
+                             plugin -->
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>6.6</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 </project>
