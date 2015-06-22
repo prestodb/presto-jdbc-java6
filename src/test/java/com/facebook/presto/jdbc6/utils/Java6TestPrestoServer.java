@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import static com.facebook.presto.jdbc6.utils.InputStreamRedirecter.redirect;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.copyOf;
@@ -102,10 +103,8 @@ public class Java6TestPrestoServer
     {
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         String addressLine = reader.readLine();
-        checkState(addressLine != null, "could not read address line from server");
-        ArrayList<String> addressElements = newArrayList(Splitter.on(":").split(addressLine));
-        checkState(addressElements.size() == 2, "bad format of address line '" + addressLine + "'");
-        return HostAndPort.fromParts(addressElements.get(0), parseInt(addressElements.get(1)));
+        checkArgument(addressLine != null, "could not read address line from server");
+        return HostAndPort.fromString(addressLine);
     }
 
     private String getMyFilteredClassPath()
