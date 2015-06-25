@@ -62,7 +62,7 @@
         <air.check.fail-checkstyle>true</air.check.fail-checkstyle>
         <air.check.skip-checkstyle>true</air.check.skip-checkstyle>
 
-        <shadeBase>com.facebook.presto.jdbc6.internal</shadeBase>
+        <shadeBase>com.facebook.presto.jdbc.internal</shadeBase>
     </properties>
 
     <dependencies>
