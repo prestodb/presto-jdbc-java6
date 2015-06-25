@@ -14,7 +14,7 @@
     <version>0.1-SNAPSHOT</version>
 
     <name>presto-jdbc-java6</name>
-    <description>Java 6 based Presto JDBC driver</description>
+    <description>Presto JDBC driver compatible with Java 6</description>
     <url>https://github.com/prestodb/presto-jdbc-java6</url>
 
     <inceptionYear>2015</inceptionYear>
