@@ -13,18 +13,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import static com.facebook.presto.jdbc6.utils.InputStreamRedirecter.redirect;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.copyOf;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Lists.newArrayList;
-import static java.lang.Integer.parseInt;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 
 public class Java6TestPrestoServer
