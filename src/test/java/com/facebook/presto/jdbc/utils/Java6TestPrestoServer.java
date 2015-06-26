@@ -86,7 +86,6 @@ public class Java6TestPrestoServer
         processBuilder.command(command);
         LOG.debug("starting testing presto server with cmd: {}", command);
 
-
         process = processBuilder.start();
 
         executorService = newCachedThreadPool();

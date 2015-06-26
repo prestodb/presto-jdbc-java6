@@ -40,9 +40,6 @@ public class StatementStats
     private final long processedBytes;
     private final StageStats rootStage;
 
-
-
-
     @JsonCreator
     public StatementStats(
             @JsonProperty("state") String state,

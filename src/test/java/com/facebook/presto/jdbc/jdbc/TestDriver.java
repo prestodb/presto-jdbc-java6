@@ -818,7 +818,6 @@ public class TestDriver
             finally {
                 rs.close();
             }
-            ;
         }
         finally {
             connection.close();
