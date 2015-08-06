@@ -1,0 +1,22 @@
+language: java
+
+jdk:
+  - openjdk6
+
+env:
+  global:
+    - MAVEN_OPTS="-Xmx256M"
+
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.m2/io
+    - $HOME/.m2/org
+
+install:
+  - cp travis-toolchains.xml ~/.m2/toolchains.xml
+
+script:
+  - mvn install -DskipTests=true -B -V -q -T 2
+  - mvn test -Djava8.home=/usr/lib/jvm/java-8-oracle
