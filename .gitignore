@@ -19,3 +19,4 @@ test-output
 *.pyc
 *.class
 .checkstyle
+.java-version
