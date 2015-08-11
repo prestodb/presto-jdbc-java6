@@ -1,5 +1,7 @@
 # presto-jdbc-java6
 
+[![travis](https://api.travis-ci.org/prestodb/presto-jdbc-java6.svg)](https://travis-ci.org/prestodb/presto-jdbc-java6)
+
 Presto JDBC driver compatible with Java 6
 
 # Motivation 
