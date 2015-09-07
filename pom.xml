@@ -331,6 +331,11 @@
                                         <exclude>META-INF/maven/**</exclude>
                                         <exclude>META-INF/*.xml</exclude>
                                         <exclude>LICENSE</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/LICENSE.txt</exclude>
+                                        <exclude>META-INF/license/*</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                        <exclude>META-INF/NOTICE.txt</exclude>
                                         <exclude>META-INF/services/org.apache.commons.logging.LogFactory</exclude>
                                         <exclude>META-INF/DEPENDENCIES</exclude>
                                     </excludes>
