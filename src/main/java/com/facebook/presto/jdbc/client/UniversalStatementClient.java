@@ -114,6 +114,7 @@ public class UniversalStatementClient implements Closeable
             currentResults.set(client.execute(uri));
         }
         catch (RuntimeException e) {
+            close();
             gone.set(true);
             throw e;
         }
@@ -126,11 +127,11 @@ public class UniversalStatementClient implements Closeable
         if (client.isClosed()) {
             return;
         }
-        client.close();
         URI uri = currentResults.get().getNextUri();
         if (uri != null) {
             client.deleteAsync(uri);
         }
+        client.close();
     }
 
     public boolean cancelLeafStage()
