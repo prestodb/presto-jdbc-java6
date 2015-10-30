@@ -35,6 +35,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -46,7 +47,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.apache.http.entity.ContentType.parse;
 
-public class ApacheQueryHttpClient implements QueryHttpClient
+public class ApacheQueryHttpClient
+        implements QueryHttpClient
 {
     private static final RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(10000).setConnectTimeout(10000).build();
 
@@ -121,12 +123,21 @@ public class ApacheQueryHttpClient implements QueryHttpClient
             attempts++;
 
             HttpResponse response;
+            Future<HttpResponse> responseFuture = null;
             try {
-                response = httpAsyncClient.execute(request, null).get();
+                responseFuture = httpAsyncClient.execute(request, null);
+                response = responseFuture.get();
             }
             catch (InterruptedException e) {
-                cause = e;
-                continue;
+                try {
+                    if (responseFuture != null) {
+                        responseFuture.cancel(true);
+                    }
+                }
+                finally {
+                    Thread.currentThread().interrupt();
+                }
+                throw new RuntimeException("ApacheQueryHttpClient interrupted");
             }
             catch (ExecutionException e) {
                 cause = e;

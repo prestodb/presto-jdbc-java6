@@ -163,6 +163,9 @@ public class PrestoResultSet
             return true;
         }
         catch (RuntimeException e) {
+            if (e.getCause() instanceof SQLException) {
+                throw (SQLException) e.getCause();
+            }
             propagateIfInstanceOf(e, SQLException.class);
             throw new SQLException("Error fetching results", e);
         }
@@ -1740,6 +1743,10 @@ public class PrestoResultSet
         protected Iterable<List<Object>> computeNext()
         {
             while (client.isValid()) {
+                if (Thread.currentThread().isInterrupted()) {
+                    client.close();
+                    throw propagate(new SQLException("ResultSet thread was interrupted"));
+                }
                 Iterable<List<Object>> data = client.current().getData();
                 client.advance();
                 if (data != null) {
