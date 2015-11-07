@@ -30,6 +30,7 @@ public class Java6TestPrestoServer
     private static final String JAVA_8_TESTING_PRESTO_SERVER_LAUNCHER_CLASSNAME = "com.facebook.presto.server.testing.TestingPrestoServerLauncher";
     private static final Splitter CLASSPATH_SPLITTER = Splitter.on(File.pathSeparatorChar);
     private static final Joiner CLASSPATH_JOINER = Joiner.on(File.pathSeparatorChar);
+    private static final int WAIT_FOR_STARTUP_SECONDS = 10;
     private final List<Catalog> catalogs;
     private final List<String> pluginClassNames;
     private HostAndPort address;
@@ -92,6 +93,9 @@ public class Java6TestPrestoServer
         redirect(process.getErrorStream(), System.err, executorService);
         address = readAddressFrom(process.getInputStream());
         redirect(process.getInputStream(), System.out, executorService);
+
+        LOG.info("Wait {}s for server startup", WAIT_FOR_STARTUP_SECONDS);
+        Thread.sleep(WAIT_FOR_STARTUP_SECONDS * 1000);
     }
 
     private HostAndPort readAddressFrom(InputStream inputStream)
