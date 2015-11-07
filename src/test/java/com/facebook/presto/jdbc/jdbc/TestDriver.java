@@ -15,8 +15,10 @@ package com.facebook.presto.jdbc.jdbc;
 
 import com.facebook.presto.jdbc.PrestoIntervalDayTime;
 import com.facebook.presto.jdbc.PrestoIntervalYearMonth;
+import com.facebook.presto.jdbc.PrestoResultSet;
 import com.facebook.presto.jdbc.utils.Assertions;
 import com.facebook.presto.jdbc.utils.Java6TestPrestoServer;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
@@ -40,10 +42,17 @@ import java.sql.Types;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -57,6 +66,7 @@ public class TestDriver
     private static final String TEST_CATALOG = "default";
 
     private Java6TestPrestoServer server;
+    private ExecutorService executorService;
 
     @BeforeClass
     public void setup()
@@ -66,12 +76,16 @@ public class TestDriver
                 ImmutableList.of("com.facebook.presto.tpch.TpchPlugin"),
                 ImmutableList.of(new Java6TestPrestoServer.Catalog("default", "tpch")));
         server.start();
+        executorService = newCachedThreadPool();
     }
 
     @AfterClass
     public void teardown()
+            throws Exception
     {
         server.close();
+        executorService.shutdownNow();
+        executorService.awaitTermination(1, MINUTES);
     }
 
     @Test
@@ -1330,6 +1344,106 @@ public class TestDriver
         finally {
             ignored.close();
         }
+    }
+
+    @Test
+    public void testQueryCancellation()
+            throws Exception
+    {
+        final CountDownLatch queryStarted = new CountDownLatch(1);
+        final CountDownLatch queryFinished = new CountDownLatch(1);
+        final AtomicReference<String> queryIdReference = new AtomicReference<String>();
+
+        Future<Void> queryFuture = executorService.submit(new Callable<Void>()
+        {
+            @Override
+            public Void call()
+                    throws Exception
+            {
+                runQuery("SELECT * FROM sf100.lineitem", new ResultSetCallback()
+                {
+                    @Override
+                    public void doWithResultsSet(ResultSet resultSet)
+                            throws SQLException
+                    {
+                        resultSet.next();
+                        String queryId = resultSet.unwrap(PrestoResultSet.class).getQueryId();
+                        queryIdReference.set(queryId);
+                        queryStarted.countDown();
+                        try {
+                            while (resultSet.next()) {
+                                // skip results
+                            }
+                        }
+                        finally {
+                            queryFinished.countDown();
+                        }
+                    }
+                });
+                return null;
+            }
+        });
+
+        queryStarted.await(1, MINUTES);
+        String queryId = queryIdReference.get();
+        assertNotNull(queryId);
+        assertQueryState(queryId, "RUNNING");
+
+        queryFuture.cancel(true);
+
+        queryFinished.await(1, MINUTES);
+
+        assertQueryState(queryId, "FAILED");
+    }
+
+    private void assertQueryState(String queryId, final String state)
+    {
+        String sql = format("select state from system.runtime.queries where query_id='%s'", queryId);
+        runQuery(sql, new ResultSetCallback()
+        {
+            @Override
+            public void doWithResultsSet(ResultSet resultSet)
+                    throws SQLException
+            {
+                assertTrue(resultSet.next(), "Query not found");
+                assertEquals(resultSet.getString(1), state);
+            }
+        });
+    }
+
+    private void runQuery(String query, ResultSetCallback resultSetCallback)
+    {
+        try {
+            Connection connection = null;
+            Statement statement = null;
+            ResultSet resultSet = null;
+            try {
+                connection = createConnection();
+                statement = connection.createStatement();
+                resultSet = statement.executeQuery(query);
+                resultSetCallback.doWithResultsSet(resultSet);
+            }
+            finally {
+                if (resultSet != null) {
+                    resultSet.close();
+                }
+                if (statement != null) {
+                    statement.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            }
+        }
+        catch (SQLException e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    private static interface ResultSetCallback
+    {
+        void doWithResultsSet(ResultSet resultSet)
+                throws SQLException;
     }
 
     private Connection createConnection()
